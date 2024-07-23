@@ -40,9 +40,6 @@ class Hodina {
         /** @type {string} */
         this.den = den;
 
-        //let _cas = cas.split("-");
-        /** @type {string} */
-        //this.cas = Cas(_cas[0], _cas[1]);
         /** @type {string} */
         this.cas = cas;
 
@@ -131,6 +128,14 @@ class Hodina {
             pravidelnost
         );
     }
+
+    casZaciatku() {
+        return this.cas.split('-')[0].trim();
+    }
+
+    casKonca() {
+        return this.cas.split('-')[1].trim();
+    }
 }
 
 class Rozvrh {
@@ -166,13 +171,13 @@ class Rozvrh {
      *
      * @returns {HTMLTableElement}
      **/
-    tabulka(skupina=null) {
+    tabulka(skupina = null) {
         let tabulka = document.createElement("table");
 
         let hlavicka = document.createElement("tr");
         hlavicka.innerHTML = `
-            <th>Čas</th>
             <th>Deň</th>
+            <th>Čas</th>
             <th>Predmet</th>
             <th>Skupiny</th>
         `;
@@ -186,11 +191,19 @@ class Rozvrh {
             var hodiny = this.hodiny;
         }
 
+        // Zoradenie hodín chronologicky
+        hodiny.sort((a, b) => {
+            const dniPoradie = Object.keys(dni);
+            const denRozdiel = dniPoradie.indexOf(a.den) - dniPoradie.indexOf(b.den);
+            if (denRozdiel !== 0) return denRozdiel;
+            return this.porovnajCasy(a.casZaciatku(), b.casZaciatku());
+        });
+
         for (const hodina of hodiny) {
             const riadok = document.createElement("tr");
             riadok.innerHTML = `
-                <td>${hodina.cas}</td>
                 <td>${dni[hodina.den]}</td>
+                <td>${hodina.cas}</td>
                 <td>${hodina.nazov}</td>
                 <td>${hodina.skupiny.join(", ")}</td>
             `;
@@ -198,6 +211,98 @@ class Rozvrh {
         }
 
         return tabulka;
+    }
+
+    skoreADlheDni(skupina = null) {
+        let filtrovaneHodiny = skupina !== null
+            ? this.hodiny.filter(h => h.skupiny.includes(skupina) || h.skupiny.length === 0)
+            : this.hodiny;
+
+        let najskorsieCasy = {};
+        let najneskorsieCasy = {};
+        let najskorsiCas = '23:59';
+        let najneskorsiCas = '00:00';
+
+        for (const hodina of filtrovaneHodiny) {
+            const zaciatok = hodina.casZaciatku();
+            const koniec = hodina.casKonca();
+
+            if (zaciatok <= najskorsiCas) {
+                if (zaciatok < najskorsiCas) {
+                    najskorsieCasy = {};
+                    najskorsiCas = zaciatok;
+                }
+                if (!najskorsieCasy[hodina.den]) {
+                    najskorsieCasy[hodina.den] = zaciatok;
+                }
+            }
+
+            if (koniec >= najneskorsiCas) {
+                if (koniec > najneskorsiCas) {
+                    najneskorsieCasy = {};
+                    najneskorsiCas = koniec;
+                }
+                if (!najneskorsieCasy[hodina.den]) {
+                    najneskorsieCasy[hodina.den] = koniec;
+                }
+            }
+        }
+
+        return {
+            najskorsi: Object.entries(najskorsieCasy).map(([den, cas]) => ({ den: dni[den], cas })),
+            najneskorsi: Object.entries(najneskorsieCasy).map(([den, cas]) => ({ den: dni[den], cas }))
+        };
+    }
+
+    dlhePrestavky(skupina = null, minDlzkaPrestavky = 30) {
+        let filtrovaneHodiny = skupina !== null
+            ? this.hodiny.filter(h => h.skupiny.includes(skupina) || h.skupiny.length === 0)
+            : this.hodiny;
+
+        let prestavky = {};
+
+        for (const den of Object.keys(dni)) {
+            let hodinyDna = filtrovaneHodiny.filter(h => h.den === den)
+                .sort((a, b) => this.porovnajCasy(a.casZaciatku(), b.casZaciatku()));
+
+            prestavky[den] = [];
+
+            for (let i = 0; i < hodinyDna.length - 1; i++) {
+                const aktualnaKonci = hodinyDna[i].casKonca();
+                const dalsiaZacina = hodinyDna[i + 1].casZaciatku();
+                const dlzkaPrestavky = this.rozdielVMinutach(aktualnaKonci, dalsiaZacina);
+
+                if (dlzkaPrestavky > minDlzkaPrestavky) {
+                    prestavky[den].push({
+                        zaciatok: aktualnaKonci,
+                        koniec: dalsiaZacina,
+                        dlzka: dlzkaPrestavky
+                    });
+                }
+            }
+        }
+
+        return prestavky;
+    }
+
+    porovnajCasy(cas1, cas2) {
+        const [hodiny1, minuty1] = cas1.split(':').map(Number);
+        const [hodiny2, minuty2] = cas2.split(':').map(Number);
+
+        if (hodiny1 !== hodiny2) {
+            return hodiny1 - hodiny2;
+        }
+        return minuty1 - minuty2;
+    }
+
+    rozdielVMinutach(cas1, cas2) {
+        const [hodiny1, minuty1] = cas1.split(':').map(Number);
+        const [hodiny2, minuty2] = cas2.split(':').map(Number);
+
+        const celkoveMinuty1 = hodiny1 * 60 + minuty1;
+        const celkoveMinuty2 = hodiny2 * 60 + minuty2;
+
+        return celkoveMinuty2 - celkoveMinuty1;
     }
 }
 

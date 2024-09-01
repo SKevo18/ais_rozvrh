@@ -9,20 +9,9 @@ const dni = {
 };
 
 const typy = {
-    C: "Cvičenia",
-    P: "Prednášky",
-    S: "Semináre",
+    C: "lightyellow",
+    S: "lavenderblush",
 };
-
-class Cas {
-    constructor(zaciatok, koniec) {
-        /** @type {string} */
-        this.zaciatok = zaciatok;
-
-        /** @type {string} */
-        this.koniec = koniec;
-    }
-}
 
 class Hodina {
     constructor(
@@ -104,16 +93,16 @@ class Hodina {
 
         let bunky = element.querySelectorAll("td.cell:not(:first-child)");
 
-        let den = bunky[0].innerText;
-        let cas = bunky[1].innerText;
-        let pocetHodin = bunky[2].innerText;
-        let typ = typy[bunky[3].innerText];
-        let skratka = bunky[4].innerText;
+        let den = bunky[0].innerText.trim();
+        let cas = bunky[1].innerText.trim();
+        let pocetHodin = bunky[2].innerText.trim();
+        let typ = bunky[3].innerText.trim();
+        let skratka = bunky[4].innerText.trim();
         let nazov = bunky[5].innerText.trim();
-        let miestnost = bunky[6].innerText;
-        let vyucujuci = bunky[7].innerText;
-        let poznamka = bunky[8].innerText;
-        let pravidelnost = bunky[9].innerText;
+        let miestnost = bunky[6].innerText.trim();
+        let vyucujuci = bunky[7].innerText.trim();
+        let poznamka = bunky[8].innerText.trim();
+        let pravidelnost = bunky[9].innerText.trim();
 
         return new Hodina(
             den,
@@ -154,7 +143,6 @@ class Rozvrh {
         let rozvrh = new Rozvrh();
         let tabulkaElement = document.createElement("table");
         tabulkaElement.innerHTML = html;
-        console.log(tabulkaElement);
 
         for (let riadok of tabulkaElement.querySelectorAll(
             "tbody tr:not(:first-child)"
@@ -177,8 +165,10 @@ class Rozvrh {
         let hlavicka = document.createElement("tr");
         hlavicka.innerHTML = `
             <th>Deň</th>
+            <th>Pravidelnosť</th>
             <th>Čas</th>
             <th>Predmet</th>
+            <th>Typ</th>
             <th>Skupiny</th>
         `;
         tabulka.appendChild(hlavicka);
@@ -201,12 +191,16 @@ class Rozvrh {
 
         for (const hodina of hodiny) {
             const riadok = document.createElement("tr");
+            riadok.style.backgroundColor = typy[hodina.typ];
             riadok.innerHTML = `
                 <td>${dni[hodina.den]}</td>
+                <td ${hodina.pravidelnost !== "TYZ" && 'style="background-color: lightgreen"'}>${hodina.pravidelnost}</td>
                 <td>${hodina.cas}</td>
                 <td>${hodina.nazov}</td>
+                <td>${hodina.typ}</td>
                 <td>${hodina.skupiny.join(", ")}</td>
             `;
+
             tabulka.appendChild(riadok);
         }
 
@@ -283,6 +277,26 @@ class Rozvrh {
         }
 
         return prestavky;
+    }
+
+    ibaNepovinneDni(skupina = null) {
+        const filtrovaneHodiny = skupina !== null
+            ? this.hodiny.filter(h => h.skupiny.includes(skupina) || h.skupiny.length === 0)
+            : this.hodiny;
+        const povinnePocty = {};
+        
+        for (const hodina of filtrovaneHodiny) {
+            if (!povinnePocty[hodina.den]) {
+                povinnePocty[hodina.den] = 0;
+            }
+
+            if (hodina.typ !== "P") {
+                povinnePocty[hodina.den] += 1;
+            }
+        }
+
+        const nepovinneDni = Object.keys(povinnePocty).filter(den => povinnePocty[den] === 0);
+        return nepovinneDni;
     }
 
     porovnajCasy(cas1, cas2) {

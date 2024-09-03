@@ -56,7 +56,7 @@ function prepinacSkupiny(aktualnaSkupina) {
         type: 'number',
         id: 'skupina',
         name: 'skupina',
-        value: aktualnaSkupina,
+        value: aktualnaSkupina || 0,
         min: '0',
         max: '8',
     });
@@ -120,10 +120,13 @@ globalThis.window.addEventListener("load", async () => {
     skup_element.append(prepinacSkupiny(s));
     skup_element.append(prepinacTmavehoRezimu());
 
-    const tmavyRezim = localStorage.getItem('tmavyRezim');
-    if (tmavyRezim === 'ano') {
-        document.getElementById('tmave-styly').disabled = false;
+    let tmavyRezim = localStorage.getItem('tmavyRezim')
+    if (!tmavyRezim) {
+        tmavyRezim = window.matchMedia("(prefers-color-scheme: dark)").matches ? 'ano' : 'nie';
+        localStorage.setItem('tmavyRezim', tmavyRezim);
     }
+
+    document.getElementById("tmave-styly").disabled = tmavyRezim === 'nie';
 
     const rozvrh = document.getElementById("rozvrh");
     const kombinovanyRozvrh = await nacitajRozvrhy();

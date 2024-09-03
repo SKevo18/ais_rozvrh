@@ -12,75 +12,100 @@ async function vsetkySuboryRozvrhov() {
     return subory;
 }
 
-function najskorsiNajneskorsiElement(prvaPosledna) {
-    const infoElement = document.createElement('div');
-
-    const najskorsieDni = prvaPosledna.najskorsi.map(item => `${item.den} (${item.cas})`).join(', ');
-    const najneskorsieDni = prvaPosledna.najneskorsi.map(item => `${item.den} (${item.cas})`).join(', ');
-
-    infoElement.innerHTML = `
-    <div id="info">
-        <p><b>Najskorší začiatok:</b> ${najskorsieDni}</p>
-        <p><b>Najneskorší koniec:</b> ${najneskorsieDni}</p>
-    </div>
+function vytvorInfoElement(nadpis, obsah) {
+    const element = document.createElement('div');
+    element.innerHTML = `
+        <h3>${nadpis}</h3>
+        <p>${obsah}</p>
     `;
-    return infoElement;
-}
-
-function dniSIbaNepovinnymi(dni) {
-    const nepovinne = document.createElement('div');
-    nepovinne.innerHTML = dni.join(', ');
-
-    return nepovinne;
+    return element;
 }
 
 function tabulkaPrestavok(prestavkyData) {
-    const tabulka = document.createElement('table');
-    tabulka.innerHTML = `
-        <thead>
+    const riadky = Object.entries(prestavkyData).flatMap(([den, prestavky]) =>
+        prestavky.map(p => `
             <tr>
-                <th>Deň</th>
-                <th>Začiatok prestávky</th>
-                <th>Koniec prestávky</th>
-                <th>Trvanie (minúty)</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    `;
-
-    const tbody = tabulka.querySelector('tbody');
-
-    for (const [den, prestavky] of Object.entries(prestavkyData)) {
-        for (const prestavkyInfo of prestavky) {
-            const riadok = document.createElement('tr');
-            riadok.innerHTML = `
                 <td>${den}</td>
-                <td>${prestavkyInfo.zaciatok}</td>
-                <td>${prestavkyInfo.koniec}</td>
-                <td>${prestavkyInfo.dlzka}</td>
-            `;
-            tbody.appendChild(riadok);
-        }
-    }
+                <td>${p.zaciatok}</td>
+                <td>${p.koniec}</td>
+                <td>${p.dlzka}</td>
+            </tr>
+        `)
+    ).join('');
 
-    return tabulka;
+    return `
+        <table>
+            <thead>
+                <tr>
+                    <th>Deň</th>
+                    <th>Začiatok prestávky</th>
+                    <th>Koniec prestávky</th>
+                    <th>Trvanie (minúty)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${riadky}
+            </tbody>
+        </table>
+    `;
 }
 
 function prepinacSkupiny(aktualnaSkupina) {
     const prepinac = document.createElement('input');
-    prepinac.type = 'number';
-    prepinac.id = prepinac.name = 'skupina';
-    prepinac.style.marginLeft = "1rem";
-
-    prepinac.value = aktualnaSkupina;
-    prepinac.min = '0';
-    prepinac.max = '8';
-
-    prepinac.prepend('Skupina: ');
+    Object.assign(prepinac, {
+        type: 'number',
+        id: 'skupina',
+        name: 'skupina',
+        value: aktualnaSkupina,
+        min: '0',
+        max: '8',
+    });
+    prepinac.style.marginLeft = '1rem';
 
     prepinac.addEventListener('change', (event) => {
-        window.location = `?s=${event.target.value}`;
+        window.location.search = `?s=${event.target.value}`;
+    });
+
+    return prepinac;
+}
+
+async function nacitajRozvrhy() {
+    const subory = await vsetkySuboryRozvrhov();
+    const kombinovanyRozvrh = new Rozvrh();
+
+    for (const subor of subory) {
+        const htmlRozvrhu = await (await fetch(subor)).text();
+        const rozvrhObjekt = new Rozvrh().zHtml(htmlRozvrhu);
+        kombinovanyRozvrh.hodiny = kombinovanyRozvrh.hodiny.concat(rozvrhObjekt.hodiny);
+    }
+
+    return kombinovanyRozvrh;
+}
+
+function vytvorInformacie(kombinovanyRozvrh, SKUPINA) {
+    const prestavky = kombinovanyRozvrh.dlhePrestavky(SKUPINA);
+    const prvaPosledna = kombinovanyRozvrh.skoreADlheDni(SKUPINA);
+    const nepovinneDni = kombinovanyRozvrh.ibaNepovinneDni(SKUPINA);
+
+    const prestavkyElement = vytvorInfoElement('Dlhé prestávky (> 30 minút):', tabulkaPrestavok(prestavky));
+    const najskorsiNajneskorsiInfo = vytvorInfoElement('Informácie o začiatkoch a koncoch:',
+        `<b>Najskorší začiatok</b>: ${prvaPosledna.najskorsi.map(item => `${item.den} (${item.cas})`).join(', ')}<br>
+         <b>Najneskorší koniec</b>: ${prvaPosledna.najneskorsi.map(item => `${item.den} (${item.cas})`).join(', ')}`
+    );
+    const nepovinneDniInfo = vytvorInfoElement('Nepovinné dni:', nepovinneDni.join(', '));
+
+    return [prestavkyElement, najskorsiNajneskorsiInfo, nepovinneDniInfo];
+}
+
+function prepinacTmavehoRezimu() {
+    const prepinac = document.createElement('button');
+    prepinac.textContent = 'Prepnúť tmavý režim';
+    prepinac.style.marginLeft = '1rem';
+
+    prepinac.addEventListener('click', () => {
+        const tmaveStyly = document.getElementById('tmave-styly');
+        tmaveStyly.disabled = !tmaveStyly.disabled;
+        localStorage.setItem('tmavyRezim', tmaveStyly.disabled ? 'nie' : 'ano');
     });
 
     return prepinac;
@@ -91,43 +116,23 @@ globalThis.window.addEventListener("load", async () => {
     const SKUPINA = (s !== null && s.length > 0 && s !== "0") ? parseInt(s) : null;
 
     const skup_element = document.getElementById("skupina");
-    if (SKUPINA != null) {
-        skup_element.innerHTML = `Skupina ${SKUPINA}`;
-    } else {
-        skup_element.innerHTML = "Všetky skupiny";
-    }
-
+    skup_element.innerHTML = SKUPINA != null ? `Skupina ${SKUPINA}` : "Všetky skupiny";
     skup_element.append(prepinacSkupiny(s));
+    skup_element.append(prepinacTmavehoRezimu());
 
-    let rozvrh = document.getElementById("rozvrh");
-    let kombinovanyRozvrh = new Rozvrh();
-
-    for (let subor of await vsetkySuboryRozvrhov()) {
-        let htmlRozvrhu = await (await fetch(subor)).text();
-
-        let rozvrhObjekt = new Rozvrh().zHtml(htmlRozvrhu);
-        kombinovanyRozvrh.hodiny = kombinovanyRozvrh.hodiny.concat(rozvrhObjekt.hodiny);
-        rozvrh.appendChild(rozvrhObjekt.tabulka(SKUPINA));
+    const tmavyRezim = localStorage.getItem('tmavyRezim');
+    if (tmavyRezim === 'ano') {
+        document.getElementById('tmave-styly').disabled = false;
     }
 
-    const prestavky = kombinovanyRozvrh.dlhePrestavky(SKUPINA);
-    const prestavkyElement = tabulkaPrestavok(prestavky);
-    const prestavkyDiv = document.createElement('div');
-    const nepovinneDniInfo = document.createElement('div');
+    const rozvrh = document.getElementById("rozvrh");
+    const kombinovanyRozvrh = await nacitajRozvrhy();
+    rozvrh.appendChild(kombinovanyRozvrh.tabulka(SKUPINA));
 
-    prestavkyDiv.id = 'prestavky';
-    prestavkyDiv.innerHTML = '<h3>Dlhé prestávky (> 30 minút):</h3>';
-    prestavkyDiv.appendChild(prestavkyElement);
+    const informacie = vytvorInformacie(kombinovanyRozvrh, SKUPINA);
+    const infoDiv = document.createElement('div');
+    infoDiv.id = 'informacie';
+    informacie.forEach(info => infoDiv.appendChild(info));
 
-    const prvaPosledna = kombinovanyRozvrh.skoreADlheDni(SKUPINA);
-    const infoElement = najskorsiNajneskorsiElement(prvaPosledna);
-    prestavkyDiv.appendChild(infoElement);
-
-    nepovinneDniInfo.id = 'nepovinne';
-    nepovinneDniInfo.innerHTML = '<h3>Nepovinné dni:</h3>';
-    const nepovinneDniData = dniSIbaNepovinnymi(kombinovanyRozvrh.ibaNepovinneDni(SKUPINA));
-    nepovinneDniInfo.appendChild(nepovinneDniData);
-
-    rozvrh.parentNode.append(prestavkyDiv);
-    prestavkyDiv.append(nepovinneDniInfo);
+    rozvrh.parentNode.appendChild(infoDiv);
 });

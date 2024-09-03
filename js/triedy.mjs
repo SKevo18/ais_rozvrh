@@ -9,8 +9,8 @@ const dni = {
 };
 
 const typy = {
-    C: "lightyellow",
-    S: "lavenderblush",
+    C: "rgba(200, 0, 0, 0.25)",
+    S: "rgba(200, 255, 0, 0.25)",
 };
 
 class Hodina {
@@ -181,7 +181,6 @@ class Rozvrh {
             var hodiny = this.hodiny;
         }
 
-        // Zoradenie hodín chronologicky
         hodiny.sort((a, b) => {
             const dniPoradie = Object.keys(dni);
             const denRozdiel = dniPoradie.indexOf(a.den) - dniPoradie.indexOf(b.den);
@@ -194,7 +193,7 @@ class Rozvrh {
             riadok.style.backgroundColor = typy[hodina.typ];
             riadok.innerHTML = `
                 <td>${dni[hodina.den]}</td>
-                <td ${hodina.pravidelnost !== "TYZ" && 'style="background-color: lightgreen"'}>${hodina.pravidelnost}</td>
+                <td ${hodina.pravidelnost !== "TYZ" && 'style="border: 6px double green"'}>${hodina.pravidelnost}</td>
                 <td>${hodina.cas}</td>
                 <td>${hodina.nazov}</td>
                 <td>${hodina.typ}</td>

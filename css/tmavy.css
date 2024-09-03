@@ -1,0 +1,40 @@
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+table {
+    border-color: #404040;
+}
+
+th, td {
+    border-color: #404040;
+}
+
+th {
+    background-color: #1e1e1e;
+}
+
+input[type="number"] {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border: 1px solid #404040;
+}
+
+#informacie {
+    background-color: #1e1e1e;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#informacie h3 {
+    color: #bb86fc;
+}
+
+.lightyellow {
+    background-color: #3f3e30;
+}
+
+.lavenderblush {
+    background-color: #3e3036;
+}

@@ -123,7 +123,10 @@ class Hodina {
     }
 
     casKonca() {
-        return this.cas.split('-')[1].trim();
+        const koniec = this.cas.split('-')[1];
+        if (koniec !== undefined) return koniec.trim();
+
+        return this.cas
     }
 }
 
@@ -283,7 +286,7 @@ class Rozvrh {
             ? this.hodiny.filter(h => h.skupiny.includes(skupina) || h.skupiny.length === 0)
             : this.hodiny;
         const povinnePocty = {};
-        
+
         for (const hodina of filtrovaneHodiny) {
             if (!povinnePocty[hodina.den]) {
                 povinnePocty[hodina.den] = 0;

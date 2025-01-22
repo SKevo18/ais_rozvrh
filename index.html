@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rozvrhy</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Rozvrhy</title>
 
-    <script type="module" src="js/hlavne.js"></script>
-    <link rel="stylesheet" href="css/styly.css">
-    <link rel="stylesheet" href="css/tmavy.css" id="tmave-styly" disabled>
-</head>
-<body>
-    <h1 id="skupina"></h1>
+        <script type="module" src="js/hlavne.js"></script>
+        <link rel="stylesheet" href="css/styly.css" />
+        <link rel="stylesheet" href="css/tmavy.css" id="tmave-styly" disabled />
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    </head>
+    <body>
+        <h1 id="skupina"></h1>
+        <button id="prepnut-zobrazenie">Prepnúť zobrazenie</button>
 
-    <div id="tabulky" class="flex">
-        <div id="rozvrh"></div>
-    </div>
-</body>
+        <div id="tabulky" class="flex">
+            <div id="rozvrh"></div>
+            <div id="kalendar" style="display: none"></div>
+        </div>
+    </body>
 </html>

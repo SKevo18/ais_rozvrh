@@ -1,4 +1,7 @@
-import { Rozvrh } from "./triedy.mjs";
+import { Rozvrh, dni } from "./triedy.mjs";
+
+const ZACIATOK_SEMESTRA = new Date('2025-02-17');
+const POCET_TYZDNOV = 13;
 
 /**
  * Vráti zoznam HTML súborov všetkých rozvrhov.
@@ -63,7 +66,9 @@ function prepinacSkupiny(aktualnaSkupina) {
     prepinac.style.marginLeft = '1rem';
 
     prepinac.addEventListener('change', (event) => {
-        window.location.search = `?s=${event.target.value}`;
+        const params = new URLSearchParams(window.location.search);
+        params.set('s', event.target.value);
+        window.location.search = params.toString();
     });
 
     return prepinac;
@@ -112,7 +117,9 @@ function prepinacTmavehoRezimu() {
 }
 
 globalThis.window.addEventListener("load", async () => {
-    const s = new URLSearchParams(window.location.search).get("s");
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("s");
+    const zobrazenie = params.get('z') || 't';
     const SKUPINA = (s !== null && s.length > 0 && s !== "0") ? parseInt(s) : null;
 
     const skup_element = document.getElementById("skupina");
@@ -120,7 +127,7 @@ globalThis.window.addEventListener("load", async () => {
     skup_element.append(prepinacSkupiny(s));
     skup_element.append(prepinacTmavehoRezimu());
 
-    let tmavyRezim = localStorage.getItem('tmavyRezim')
+    let tmavyRezim = localStorage.getItem('tmavyRezim');
     if (!tmavyRezim) {
         tmavyRezim = window.matchMedia("(prefers-color-scheme: dark)").matches ? 'ano' : 'nie';
         localStorage.setItem('tmavyRezim', tmavyRezim);
@@ -129,6 +136,7 @@ globalThis.window.addEventListener("load", async () => {
     document.getElementById("tmave-styly").disabled = tmavyRezim === 'nie';
 
     const rozvrh = document.getElementById("rozvrh");
+    const kalendar = document.getElementById("kalendar");
     const kombinovanyRozvrh = await nacitajRozvrhy();
     rozvrh.appendChild(kombinovanyRozvrh.tabulka(SKUPINA));
 
@@ -136,6 +144,120 @@ globalThis.window.addEventListener("load", async () => {
     const infoDiv = document.createElement('div');
     infoDiv.id = 'informacie';
     informacie.forEach(info => infoDiv.appendChild(info));
-
     rozvrh.parentNode.appendChild(infoDiv);
+
+    if (zobrazenie === 'k') {
+        rozvrh.style.display = 'none';
+        kalendar.style.display = 'block';
+        if (!kalendar.dataset.initialized) {
+            await nastavitKalendar();
+            kalendar.dataset.initialized = 'true';
+        }
+    } else {
+        rozvrh.style.display = 'block';
+        kalendar.style.display = 'none';
+    }
+
+    document.getElementById('prepnut-zobrazenie').addEventListener('click', async () => {
+        if (rozvrh.style.display === 'none') {
+            rozvrh.style.display = 'block';
+            kalendar.style.display = 'none';
+            params.set('z', 't');
+        } else {
+            rozvrh.style.display = 'none';
+            kalendar.style.display = 'block';
+            if (!kalendar.dataset.initialized) {
+                await nastavitKalendar();
+                kalendar.dataset.initialized = 'true';
+            }
+            params.set('z', 'k');
+        }
+        window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+    });
 });
+
+async function nastavitKalendar() {
+    const kalendar = document.getElementById('kalendar');
+    kalendar.style.width = '100vw';
+    kalendar.style.height = '100vh';
+
+    const eventy = await nacitatEventyZRozvrhu();
+    const allEvents = [];
+
+    for (let tyzdenOffset = 0; tyzdenOffset < POCET_TYZDNOV; tyzdenOffset++) {
+        const aktualnyDatumTyzdna = new Date(ZACIATOK_SEMESTRA);
+        aktualnyDatumTyzdna.setDate(ZACIATOK_SEMESTRA.getDate() + tyzdenOffset * 7);
+        const tyzden = cisloTyzdna(aktualnyDatumTyzdna);
+
+        const eventsForWeek = eventy.filter(event => {
+            const denVTyzdni = event.daysOfWeek[0];
+            if (denVTyzdni === 6 || denVTyzdni === 7) {
+                return false; // Exclude Saturday and Sunday
+            }
+
+            if (event.extendedProps.pravidelnost === "N.T" && tyzden % 2 !== 0) {
+                return true; // Odd weeks
+            } else if (event.extendedProps.pravidelnost === "P.T" && tyzden % 2 === 0) {
+                return true; // Even weeks
+            } else if (event.extendedProps.pravidelnost === "TYZ") {
+                return true; // Every week
+            }
+            return false;
+        }).map(event => ({
+            ...event,
+            startRecur: aktualnyDatumTyzdna.toISOString().split('T')[0],
+            endRecur: new Date(aktualnyDatumTyzdna.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        }));
+
+        allEvents.push(...eventsForWeek);
+    }
+
+    const fullCalendar = new window.FullCalendar.Calendar(kalendar, {
+        initialView: 'timeGridWeek',
+        initialDate: ZACIATOK_SEMESTRA.toISOString().split('T')[0],
+        slotMinTime: '00:00:00',
+        slotMaxTime: '24:00:00',
+        events: allEvents,
+        slotLabelFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        },
+        expandRows: true,
+        contentHeight: 'auto',
+        aspectRatio: 1.5,
+        hiddenDays: [0, 6],
+        locale: 'sk',
+    });
+    fullCalendar.render();
+}
+
+function cisloTyzdna(datum) {
+    const zaciatocnyDatum = new Date(datum.getFullYear(), 0, 1);
+    const dni = Math.floor((datum - zaciatocnyDatum) / (24 * 60 * 60 * 1000));
+    return Math.ceil((dni + zaciatocnyDatum.getDay() + 1) / 7);
+}
+
+async function nacitatEventyZRozvrhu() {
+    const kombinovanyRozvrh = await nacitajRozvrhy();
+    const s = new URLSearchParams(window.location.search).get("s");
+    const SKUPINA = (s !== null && s.length > 0 && s !== "0") ? parseInt(s) : null;
+    const hodiny = kombinovanyRozvrh.filtrujPodlaSkupiny(SKUPINA)
+
+    const eventy = hodiny.map(hodina => {
+        const denIndex = Object.keys(dni).indexOf(hodina.den);
+
+        return {
+            title: hodina.nazov,
+            daysOfWeek: [denIndex + 1], // 1 je pondelok, 7 je nedela
+            startTime: hodina.casZaciatku(),
+            endTime: hodina.casKonca(),
+            display: 'block',
+            extendedProps: {
+                pravidelnost: hodina.pravidelnost
+            }
+        };
+    });
+
+    return eventy;
+}

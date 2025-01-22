@@ -19,14 +19,17 @@ th {
     gap: 20px;
 }
 
+#prepnut-zobrazenie {
+    margin-bottom: 10px;
+}
+
 .flex {
     display: flex;
-    flex-direction: column; /* Default for mobile */
+    flex-direction: column;
 }
 
 @media (min-width: 768px) {
-    /* Adjust the breakpoint as needed */
     .flex {
-        flex-direction: row; /* For desktop */
+        flex-direction: row;
     }
 }

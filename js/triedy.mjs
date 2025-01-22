@@ -63,13 +63,13 @@ class Hodina {
      * @returns {number[]} Zoznam skupín. Prázdny, ak hodinu majú všetky skupiny.
      */
     get skupiny() {
+        const regex = /(\d).\s+skupina/g;
         let skupiny = [];
+        let match;
 
-        for (let i = 0; i < this.poznamka.length; i++) {
-            if (!isNaN(this.poznamka[i])) {
-                let skupina = Number(this.poznamka[i])
-                if (skupina == 0) continue
-
+        while ((match = regex.exec(this.poznamka)) !== null) {
+            const skupina = Number(match[1]);
+            if (skupina !== 0) {
                 skupiny.push(skupina);
             }
         }
@@ -176,13 +176,7 @@ class Rozvrh {
         `;
         tabulka.appendChild(hlavicka);
 
-        if (skupina !== null) {
-            var hodiny = this.hodiny.filter(
-                (hodina) => hodina.skupiny.includes(skupina) || hodina.skupiny.length == 0
-            );
-        } else {
-            var hodiny = this.hodiny;
-        }
+        var hodiny = this.filtrujPodlaSkupiny(skupina);
 
         hodiny.sort((a, b) => {
             const dniPoradie = Object.keys(dni);
@@ -207,6 +201,16 @@ class Rozvrh {
         }
 
         return tabulka;
+    }
+
+    filtrujPodlaSkupiny(skupina) {
+        if (skupina !== null) {
+            return this.hodiny.filter(
+                (hodina) => hodina.skupiny.includes(skupina) || hodina.skupiny.length == 0
+            );
+        } else {
+            return this.hodiny;
+        }
     }
 
     skoreADlheDni(skupina = null) {
@@ -322,4 +326,4 @@ class Rozvrh {
     }
 }
 
-export { Rozvrh };
+export { Rozvrh, typy, dni };

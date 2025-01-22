@@ -18,3 +18,15 @@ th {
     justify-content: flex-start;
     gap: 20px;
 }
+
+.flex {
+    display: flex;
+    flex-direction: column; /* Default for mobile */
+}
+
+@media (min-width: 768px) {
+    /* Adjust the breakpoint as needed */
+    .flex {
+        flex-direction: row; /* For desktop */
+    }
+}

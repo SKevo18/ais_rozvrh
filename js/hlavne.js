@@ -250,7 +250,7 @@ async function nacitatEventyZRozvrhu() {
         const denIndex = Object.keys(dni).indexOf(hodina.den);
 
         return {
-            title: hodina.nazov,
+            title: `${hodina.nazov} (${hodina.typ})`,
             daysOfWeek: [denIndex + 1], // 1 je pondelok, 7 je nedela
             startTime: hodina.casZaciatku(),
             endTime: hodina.casKonca(),

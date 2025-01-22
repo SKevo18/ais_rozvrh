@@ -226,6 +226,8 @@ async function nastavitKalendar() {
         expandRows: true,
         contentHeight: 'auto',
         aspectRatio: 1.5,
+        slotMinTime: '07:00:00',
+        slotMaxTime: '19:00:00',
         hiddenDays: [0, 6],
         locale: 'sk',
     });

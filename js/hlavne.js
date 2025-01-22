@@ -58,7 +58,7 @@ function prepinacSkupiny(aktualnaSkupina) {
         name: 'skupina',
         value: aktualnaSkupina || 0,
         min: '0',
-        max: '8',
+        max: '7',
     });
     prepinac.style.marginLeft = '1rem';
 

@@ -230,6 +230,7 @@ async function nastavitKalendar() {
         slotMaxTime: '19:00:00',
         hiddenDays: [0, 6],
         locale: 'sk',
+        allDaySlot: false,
     });
     fullCalendar.render();
 }

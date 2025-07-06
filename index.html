@@ -1,22 +1,188 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Rozvrhy</title>
+        <meta name="description" content="Moderná aplikácia pre zobrazenie rozvrhu hodín s vyhľadávaním a filtráciou." />
+        <meta name="keywords" content="rozvrh, hodiny, škola, univerzita, kalendár" />
+        <meta name="author" content="Rozvrh App" />
+        <meta name="theme-color" content="#2563eb" />
+        
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Rozvrh hodín" />
+        <meta property="og:description" content="Moderná aplikácia pre zobrazenie rozvrhu hodín" />
+        
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary" />
+        <meta property="twitter:title" content="Rozvrh hodín" />
+        <meta property="twitter:description" content="Moderná aplikácia pre zobrazenie rozvrhu hodín" />
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>" />
+        
+        <!-- Preload kritické zdroje -->
+        <link rel="preload" href="css/styly.css" as="style" />
+        <link rel="preload" href="js/hlavne.js" as="script" />
+        
+        <title>Rozvrh hodín</title>
 
-        <script type="module" src="js/hlavne.js"></script>
+        <!-- Štýly -->
         <link rel="stylesheet" href="css/styly.css" />
         <link rel="stylesheet" href="css/tmavy.css" id="tmave-styly" disabled />
+        
+        <!-- FullCalendar pre kalendárové zobrazenie -->
         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+        
+        <!-- Hlavný JavaScript modul -->
+        <script type="module" src="js/hlavne.js"></script>
     </head>
     <body>
-        <h1 id="skupina"></h1>
-        <button id="prepnut-zobrazenie">Prepnúť zobrazenie</button>
+        <!-- Skip to main content pre accessibility -->
+        <a href="#main-content" class="sr-only">Preskočiť na hlavný obsah</a>
+        
+        <!-- Header -->
+        <header>
+            <div id="skupina" role="banner">
+                <!-- Dynamicky generovaný obsah z JS -->
+            </div>
+        </header>
 
-        <div id="tabulky" class="flex">
-            <div id="rozvrh"></div>
-            <div id="kalendar" style="display: none"></div>
-        </div>
+        <!-- Hlavný obsah -->
+        <main id="main-content">
+            <!-- Prepínač zobrazenia -->
+            <div class="view-controls">
+                <button id="prepnut-zobrazenie" class="btn btn-primary" aria-describedby="view-description">
+                    Zobraziť kalendár
+                </button>
+                <p id="view-description" class="sr-only">
+                    Prepína medzi tabuľkovým a kalendárovým zobrazením rozvrhu
+                </p>
+            </div>
+
+            <!-- Kontajner pre zobrazenie -->
+            <div id="tabulky" class="content-container">
+                <!-- Tabuľkové zobrazenie -->
+                <section id="rozvrh" aria-label="Tabuľkové zobrazenie rozvrhu">
+                    <!-- Dynamicky generovaný obsah z JS -->
+                </section>
+                
+                <!-- Kalendárové zobrazenie -->
+                <section id="kalendar" aria-label="Kalendárové zobrazenie rozvrhu" style="display: none">
+                    <!-- FullCalendar sa vloží sem -->
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer role="contentinfo" style="margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+            <p>
+                Moderná aplikácia pre zobrazenie rozvrhu hodín
+                <!-- Verzia a posledná aktualizácia -->
+                <small style="display: block; margin-top: 0.5rem;">
+                    Verzia 2.0 | Posledná aktualizácia: <time datetime="2024-01-15">15.1.2024</time>
+                </small>
+            </p>
+        </footer>
+
+        <!-- Accessibility vylepšenia -->
+        <script>
+            // Základné accessibility vylepšenia
+            document.addEventListener('DOMContentLoaded', function() {
+                // Pridaj ARIA live regions pre dynamické aktualizácie
+                const liveRegion = document.createElement('div');
+                liveRegion.setAttribute('aria-live', 'polite');
+                liveRegion.setAttribute('aria-atomic', 'true');
+                liveRegion.className = 'sr-only';
+                liveRegion.id = 'live-region';
+                document.body.appendChild(liveRegion);
+                
+                // Keyboard navigation improvements
+                document.addEventListener('keydown', function(e) {
+                    // Escape key closes error messages
+                    if (e.key === 'Escape') {
+                        const errorMessages = document.querySelectorAll('.error-message');
+                        errorMessages.forEach(msg => msg.remove());
+                    }
+                });
+                
+                // Focus management for modals/popups
+                const focusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+                
+                // Improved tab navigation
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        const focusable = Array.from(document.querySelectorAll(focusableElements));
+                        const index = focusable.indexOf(document.activeElement);
+                        
+                        if (e.shiftKey) {
+                            if (index <= 0) {
+                                focusable[focusable.length - 1].focus();
+                                e.preventDefault();
+                            }
+                        } else {
+                            if (index >= focusable.length - 1) {
+                                focusable[0].focus();
+                                e.preventDefault();
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Reduced motion preferences
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.documentElement.style.setProperty('--animation-duration', '0s');
+                document.documentElement.style.setProperty('--transition-duration', '0s');
+            }
+            
+            // High contrast mode detection
+            if (window.matchMedia('(prefers-contrast: high)').matches) {
+                document.documentElement.classList.add('high-contrast');
+            }
+            
+            // Aktualizuj live region s informáciami o stave aplikácie
+            window.updateLiveRegion = function(message) {
+                const liveRegion = document.getElementById('live-region');
+                if (liveRegion) {
+                    liveRegion.textContent = message;
+                }
+            };
+        </script>
+
+        <!-- Performance monitoring (voliteľné) -->
+        <script>
+            // Basic performance monitoring
+            window.addEventListener('load', function() {
+                if ('performance' in window) {
+                    const perfData = performance.getEntriesByType('navigation')[0];
+                    if (perfData && perfData.loadEventEnd > 0) {
+                        const loadTime = perfData.loadEventEnd - perfData.fetchStart;
+                        console.log(`Stránka sa načítala za ${Math.round(loadTime)}ms`);
+                        
+                        // Report slow loading times
+                        if (loadTime > 3000) {
+                            console.warn('Pomalé načítanie stránky detekované');
+                        }
+                    }
+                }
+            });
+            
+            // Error reporting
+            window.addEventListener('error', function(e) {
+                console.error('JavaScript chyba:', {
+                    message: e.message,
+                    filename: e.filename,
+                    lineno: e.lineno,
+                    colno: e.colno,
+                    stack: e.error?.stack
+                });
+            });
+            
+            // Unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(e) {
+                console.error('Nespracovaná promise chyba:', e.reason);
+            });
+        </script>
     </body>
 </html>

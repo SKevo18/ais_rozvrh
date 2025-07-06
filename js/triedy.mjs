@@ -334,7 +334,8 @@ class Rozvrh {
         }
 
         return this.hodiny.filter(hodina => {
-            const skupinyHodiny = hodina.skupiny;
+            // Defensive programming - ensure skupiny is always an array
+            const skupinyHodiny = hodina.skupiny || [];
             return skupinyHodiny.length === 0 || skupinyHodiny.includes(skupina);
         });
     }
@@ -524,5 +525,5 @@ class Rozvrh {
     }
 }
 
-// Pomocné funkcie
+// Export všetkých tried a konštánt
 export { Rozvrh, Hodina, typy, dni };

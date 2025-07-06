@@ -1,4 +1,4 @@
-import { Rozvrh, dni } from "./triedy.mjs";
+import { Rozvrh, Hodina, dni } from "./triedy.mjs";
 
 // Konštanty
 const ZACIATOK_SEMESTRA = new Date('2025-02-17');
@@ -108,9 +108,24 @@ async function nacitajRozvrhy() {
         // Pokús sa načítať z cache
         const cached = CacheManager.get('kombinovany_rozvrh');
         if (cached) {
-            // Deserializuj cache späť na Rozvrh objekt
+            // Deserializuj cache späť na Rozvrh objekt s správnymi inštanciami
             const rozvrh = new Rozvrh();
-            rozvrh.hodiny = cached.hodiny || [];
+            const hodiny = (cached.hodiny || []).map(hodinaData => {
+                // Vytvor novú inštanciu Hodina z cached dát
+                return new Hodina(
+                    hodinaData.den,
+                    hodinaData.cas,
+                    hodinaData.pocetHodin,
+                    hodinaData.typ,
+                    hodinaData.skratka,
+                    hodinaData.nazov,
+                    hodinaData.miestnost,
+                    hodinaData.vyucujuci,
+                    hodinaData.poznamka,
+                    hodinaData.pravidelnost
+                );
+            });
+            rozvrh.hodiny = hodiny;
             return rozvrh;
         }
 
@@ -827,17 +842,26 @@ async function nacitatEventyZRozvrhu() {
     const eventy = hodiny.map(hodina => {
         const denIndex = Object.keys(dni).indexOf(hodina.den);
 
+        // Defensive programming - fallback pre metódy ak objekt nie je správna inštancia
+        const casZaciatku = typeof hodina.casZaciatku === 'function'
+            ? hodina.casZaciatku()
+            : hodina.cas.split('-')[0]?.trim() || hodina.cas;
+
+        const casKonca = typeof hodina.casKonca === 'function'
+            ? hodina.casKonca()
+            : hodina.cas.split('-')[1]?.trim() || casZaciatku;
+
         return {
             title: `${hodina.nazov} (${hodina.typ})`,
             daysOfWeek: [denIndex + 1],
-            startTime: hodina.casZaciatku(),
-            endTime: hodina.casKonca(),
+            startTime: casZaciatku,
+            endTime: casKonca,
             display: 'block',
             extendedProps: {
                 pravidelnost: hodina.pravidelnost,
                 miestnost: hodina.miestnost,
                 vyucujuci: hodina.vyucujuci,
-                skupiny: hodina.skupiny
+                skupiny: hodina.skupiny || []
             },
             backgroundColor: {
                 'C': '#ff6b6b',
